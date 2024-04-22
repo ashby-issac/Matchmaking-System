@@ -11,8 +11,10 @@
 //////////////////////////////////////////////////////////////////////////
 // AMatchmakingSystemCharacter
 
-AMatchmakingSystemCharacter::AMatchmakingSystemCharacter()
-	: CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete))
+AMatchmakingSystemCharacter::AMatchmakingSystemCharacter() : 
+	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
+	FindSessionsCompleteDelegate(FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete)),
+	JoinSessionCompleteDelegate(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -88,8 +90,27 @@ void AMatchmakingSystemCharacter::CreateGameSession()
 	SessionSettings->bShouldAdvertise = true;
 	SessionSettings->bUsesPresence = true;
 	SessionSettings->bUseLobbiesIfAvailable = true;
+	SessionSettings->Set(FName("MatchType"), FString("FreeForAll"), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
+}
+
+void AMatchmakingSystemCharacter::JoinGameSession()
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(FindSessionsCompleteDelegate);
+	SearchSettings = MakeShareable(new FOnlineSessionSearch());
+
+	SearchSettings->MaxSearchResults = 10000;
+	SearchSettings->bIsLanQuery = false;
+	SearchSettings->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+
+	ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SearchSettings.ToSharedRef());
 }
 
 void AMatchmakingSystemCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
@@ -98,6 +119,7 @@ void AMatchmakingSystemCharacter::OnCreateSessionComplete(FName SessionName, boo
 	
 	if (bWasSuccessful)
 	{
+		GetWorld()->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
 		GEngine->AddOnScreenDebugMessage(
 			-1,
 			15.f,
@@ -113,6 +135,74 @@ void AMatchmakingSystemCharacter::OnCreateSessionComplete(FName SessionName, boo
 			FColor::Red,
 			FString::Printf(TEXT("Failed to create game session: %s"), *SessionName.ToString())
 		);
+	}
+}
+
+void AMatchmakingSystemCharacter::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	if (!GEngine || !OnlineSessionInterface.IsValid()) 
+	{
+		return;
+	}
+
+	if (bWasSuccessful)
+	{
+		for (auto SearchResult : SearchSettings->SearchResults)
+		{
+			auto Id = SearchResult.GetSessionIdStr();
+			auto User = SearchResult.Session.OwningUserName;
+
+			FString MatchType;
+			SearchResult.Session.SessionSettings.Get(FName("MatchType"), MatchType);
+			
+			if (MatchType.Equals("FreeForAll"))
+			{
+				OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegate);
+
+				ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+				OnlineSessionInterface->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, SearchResult);
+				GEngine->AddOnScreenDebugMessage(
+					-1,
+					15.f,
+					FColor::Cyan,
+					FString::Printf(TEXT("Found FreeForAll Session with Id: %s and UserName: %s"), *Id, *User)
+				);
+				break;
+			}
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			15.f,
+			FColor::Red,
+			FString::Printf(TEXT("No sessions found"))
+		);
+	}
+}
+
+void AMatchmakingSystemCharacter::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	if (!OnlineSessionInterface.IsValid() || !GEngine)
+	{
+		return;
+	}
+
+	FString ConnectInfo;
+	if (OnlineSessionInterface->GetResolvedConnectString(SessionName, ConnectInfo))
+	{
+		APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+		if (PlayerController)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Green,
+				FString::Printf(TEXT("Joined Session Successfully with connection info: %s"), *ConnectInfo)
+			);
+			PlayerController->ClientTravel(ConnectInfo, ETravelType::TRAVEL_Absolute);
+		}
 	}
 }
 
@@ -192,3 +282,4 @@ void AMatchmakingSystemCharacter::MoveRight(float Value)
 		AddMovementInput(Direction, Value);
 	}
 }
+
