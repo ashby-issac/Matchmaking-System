@@ -18,7 +18,7 @@ class MULTIPLAYERSESSIONS_API UMultiplayerSessionsSubsystem : public UGameInstan
 public:
 	UMultiplayerSessionsSubsystem();
 
-	void CreateGameSession(int32 NumOfConnections, FName MatchType);
+	void CreateGameSession(int32 NumOfConnections, FString MatchType);
 	void FindGameSession(int32 NumOfSearches);
 	void JoinGameSession(const FOnlineSessionSearchResult& SearchResult);
 	void StartGameSession();
