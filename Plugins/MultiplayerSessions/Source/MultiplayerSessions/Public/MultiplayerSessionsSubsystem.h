@@ -7,9 +7,8 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "MultiplayerSessionsSubsystem.generated.h"
 
-/**
- * 
- */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMPCreateSessionCompleteDelegate, bool, bWasSuccessful);
+
 UCLASS()
 class MULTIPLAYERSESSIONS_API UMultiplayerSessionsSubsystem : public UGameInstanceSubsystem
 {
@@ -23,6 +22,8 @@ public:
 	void JoinGameSession(const FOnlineSessionSearchResult& SearchResult);
 	void StartGameSession();
 	void DestroyGameSession();
+
+	FMPCreateSessionCompleteDelegate MPCreateSessionCompleteDelegate;
 
 protected:
 	void OnCreateSessionCompleteDelegate(FName SessionName, bool bWasSuccessful);

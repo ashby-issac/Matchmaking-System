@@ -27,8 +27,10 @@ public:
 
 protected:
 	virtual bool Initialize() override;
-
 	virtual void OnLevelRemovedFromWorld(ULevel* Level, UWorld* World) override;
+
+	UFUNCTION()
+	void OnCreateSessionComplete(bool bWasSuccessful);
 
 private:
 	int32 NumOfPublicConnections;

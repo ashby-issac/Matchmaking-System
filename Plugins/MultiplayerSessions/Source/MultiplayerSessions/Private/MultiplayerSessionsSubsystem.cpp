@@ -5,7 +5,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 
-UMultiplayerSessionsSubsystem::UMultiplayerSessionsSubsystem():
+UMultiplayerSessionsSubsystem::UMultiplayerSessionsSubsystem() :
 	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionCompleteDelegate)),
 	FindSessionsCompleteDelegate(FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsCompleteDelegate)),
 	JoinSessionCompleteDelegate(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionCompleteDelegate)),
@@ -41,7 +41,7 @@ void UMultiplayerSessionsSubsystem::CreateGameSession(int32 NumOfConnections, FS
 	}
 
 	CreateSessionCompleteDelegateHandle = SessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
-	
+
 	ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
 
@@ -57,6 +57,7 @@ void UMultiplayerSessionsSubsystem::CreateGameSession(int32 NumOfConnections, FS
 	if (!SessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings))
 	{
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+		MPCreateSessionCompleteDelegate.Broadcast(false);
 	}
 }
 
@@ -78,43 +79,12 @@ void UMultiplayerSessionsSubsystem::DestroyGameSession()
 
 void UMultiplayerSessionsSubsystem::OnCreateSessionCompleteDelegate(FName SessionName, bool bWasSuccessful)
 {
-	if (!GEngine)
+	if (SessionInterface) 
 	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			15.f,
-			FColor::Red,
-			FString::Printf(TEXT("GEngine is null"))
-		);
+		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
 	}
 
-	if (bWasSuccessful)
-	{
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(
-					-1,
-					15.f,
-					FColor::Red,
-					FString::Printf(TEXT("Successfully created session: %s"), *SessionName.ToString())
-				);
-			}
-			World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
-		}
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			15.f,
-			FColor::Red,
-			FString::Printf(TEXT("Failed to create session: %s"), *SessionName.ToString())
-		);
-	}
-	SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+	MPCreateSessionCompleteDelegate.Broadcast(bWasSuccessful);
 }
 
 void UMultiplayerSessionsSubsystem::OnFindSessionsCompleteDelegate(bool bWasSuccessful)
