@@ -44,9 +44,13 @@ void UMenuUserWidget::MenuSetup(int32 NumOfConnections, FString MatchType1, FStr
 
 void UMenuUserWidget::OnHostButtonClicked()
 {
+	if (MultiplayerSessionsSubsystem)
+	{
+		HostButton->SetIsEnabled(false);
+		MultiplayerSessionsSubsystem->CreateGameSession(NumOfPublicConnections, MatchType);
+	}
 	if (GEngine)
 	{
-		MultiplayerSessionsSubsystem->CreateGameSession(NumOfPublicConnections, MatchType);
 		GEngine->AddOnScreenDebugMessage(
 			-1,
 			15.f,
@@ -58,9 +62,14 @@ void UMenuUserWidget::OnHostButtonClicked()
 
 void UMenuUserWidget::OnJoinButtonClicked()
 {
+	if (MultiplayerSessionsSubsystem)
+	{
+		JoinButton->SetIsEnabled(false);
+		MultiplayerSessionsSubsystem->FindGameSession(10000);
+	}
+
 	if (GEngine)
 	{
-		MultiplayerSessionsSubsystem->FindGameSession(10000);
 		GEngine->AddOnScreenDebugMessage(
 			-1,
 			15.f,
@@ -117,6 +126,7 @@ void UMenuUserWidget::OnCreateSessionComplete(bool bWasSuccessful)
 	}
 	else
 	{
+		HostButton->SetIsEnabled(true);
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(
@@ -160,7 +170,7 @@ void UMenuUserWidget::OnFindSessionsComplete(const TArray<FOnlineSessionSearchRe
 	}
 	else
 	{
-		// Todo :: // bind functionality, Broadcast for else case
+		JoinButton->SetIsEnabled(true);
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(

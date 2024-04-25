@@ -41,6 +41,10 @@ protected:
 	void OnDestroySessionCompleteDelegate(FName SessionName, bool bWasSuccessful);
 
 private:
+	bool IsSessionDestroyed{ false };
+	int32 LastNumOfConnections{ 0 };
+	FString LastMatchType{ TEXT("") };
+
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSettings> SessionSettings;
 	TSharedPtr<FOnlineSessionSearch> SearchSettings;
