@@ -3,6 +3,7 @@
 
 #include "MenuUserWidget.h"
 #include "Components/Button.h"
+#include "OnlineSessionSettings.h"
 #include "MultiplayerSessionsSubsystem.h"
 
 void UMenuUserWidget::MenuSetup(int32 NumOfConnections, FString MatchType1)
@@ -33,6 +34,10 @@ void UMenuUserWidget::MenuSetup(int32 NumOfConnections, FString MatchType1)
 	if (MultiplayerSessionsSubsystem)
 	{
 		MultiplayerSessionsSubsystem->MPCreateSessionCompleteDelegate.AddDynamic(this, &ThisClass::OnCreateSessionComplete);
+		MultiplayerSessionsSubsystem->MPFindSessionsCompleteDelegate.AddUObject(this, &ThisClass::OnFindSessionsComplete);
+		MultiplayerSessionsSubsystem->MPJoinSessionCompleteDelegate.AddUObject(this, &ThisClass::OnJoinSessionComplete);
+		MultiplayerSessionsSubsystem->MPStartSessionCompleteDelegate.AddDynamic(this, &ThisClass::OnStartSessionComplete);
+		MultiplayerSessionsSubsystem->MPDestroySessionCompleteDelegate.AddDynamic(this, &ThisClass::OnDestroySessionComplete);
 	}
 }
 
@@ -54,6 +59,7 @@ void UMenuUserWidget::OnJoinButtonClicked()
 {
 	if (GEngine)
 	{
+		MultiplayerSessionsSubsystem->FindGameSession(10000);
 		GEngine->AddOnScreenDebugMessage(
 			-1,
 			15.f,
@@ -102,8 +108,8 @@ void UMenuUserWidget::OnCreateSessionComplete(bool bWasSuccessful)
 		{
 			GEngine->AddOnScreenDebugMessage(
 				-1,
-				15.f, 
-				FColor::Green, 
+				15.f,
+				FColor::Green,
 				FString::Printf(TEXT("Successfully Created Session"))
 			);
 		}
@@ -120,6 +126,95 @@ void UMenuUserWidget::OnCreateSessionComplete(bool bWasSuccessful)
 			);
 		}
 	}
+}
+
+void UMenuUserWidget::OnFindSessionsComplete(const TArray<FOnlineSessionSearchResult>& SearchResults, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		for (FOnlineSessionSearchResult SearchResult : SearchResults)
+		{
+			if (!SearchResult.IsValid())
+			{
+				continue;
+			}
+
+			FString TypeOfMatch;
+			SearchResult.Session.SessionSettings.Get("MatchType", TypeOfMatch);
+			if (MatchType.Equals(TypeOfMatch))
+			{
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(
+						-1,
+						15.f,
+						FColor::Green,
+						FString::Printf(TEXT("Found a game session, calling join game session"))
+					);
+				}
+				MultiplayerSessionsSubsystem->JoinGameSession(SearchResult);
+				break;
+			}
+		}
+	}
+	else
+	{
+		// Todo :: // bind functionality, Broadcast for else case
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString::Printf(TEXT("Couldn't find game session, so not able to join"))
+			);
+		}
+	}
+}
+
+void UMenuUserWidget::OnJoinSessionComplete(EOnJoinSessionCompleteResult::Type Result, FString ConnectString)
+{
+	if (Result == EOnJoinSessionCompleteResult::Success)
+	{
+		if (auto World = GetWorld())
+		{
+			if (auto PlayerController = World->GetFirstPlayerController())
+			{
+				PlayerController->ClientTravel(ConnectString, ETravelType::TRAVEL_Absolute);
+			}
+		}
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Green,
+				FString::Printf(TEXT("Successfully joined session"))
+			);
+		}
+	}
+	else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Green,
+				FString::Printf(TEXT("Failed to join session"))
+			);
+		}
+	}
+}
+
+void UMenuUserWidget::OnStartSessionComplete(bool bWasSuccessful)
+{
+	// bind functionality
+}
+
+void UMenuUserWidget::OnDestroySessionComplete(bool bWasSuccessful)
+{
+	// bind functionality
 }
 
 void UMenuUserWidget::MenuTearDown()

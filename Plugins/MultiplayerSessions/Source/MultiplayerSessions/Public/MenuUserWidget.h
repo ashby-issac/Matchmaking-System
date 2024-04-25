@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "MenuUserWidget.generated.h"
 
 /**
@@ -31,6 +32,13 @@ protected:
 
 	UFUNCTION()
 	void OnCreateSessionComplete(bool bWasSuccessful);
+	UFUNCTION()
+	void OnStartSessionComplete(bool bWasSuccessful);
+	UFUNCTION()
+	void OnDestroySessionComplete(bool bWasSuccessful);
+
+	void OnFindSessionsComplete(const TArray<FOnlineSessionSearchResult>& SearchResults, bool bWasSuccessful);
+	void OnJoinSessionComplete(EOnJoinSessionCompleteResult::Type Result, FString ConnectString);
 
 private:
 	int32 NumOfPublicConnections;

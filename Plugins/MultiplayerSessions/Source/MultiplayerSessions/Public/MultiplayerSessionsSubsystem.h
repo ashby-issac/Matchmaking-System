@@ -8,6 +8,10 @@
 #include "MultiplayerSessionsSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMPCreateSessionCompleteDelegate, bool, bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMPFindSessionsCompleteDelegate, const TArray<FOnlineSessionSearchResult>& SearchResults, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMPJoinSessionCompleteDelegate, EOnJoinSessionCompleteResult::Type Result, FString ConnectString);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMPStartSessionCompleteDelegate, bool, bWasSuccessful);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMPDestroySessionCompleteDelegate, bool, bWasSuccessful);
 
 UCLASS()
 class MULTIPLAYERSESSIONS_API UMultiplayerSessionsSubsystem : public UGameInstanceSubsystem
@@ -24,6 +28,10 @@ public:
 	void DestroyGameSession();
 
 	FMPCreateSessionCompleteDelegate MPCreateSessionCompleteDelegate;
+	FMPFindSessionsCompleteDelegate MPFindSessionsCompleteDelegate;
+	FMPJoinSessionCompleteDelegate MPJoinSessionCompleteDelegate;
+	FMPStartSessionCompleteDelegate MPStartSessionCompleteDelegate;
+	FMPDestroySessionCompleteDelegate MPDestroySessionCompleteDelegate;
 
 protected:
 	void OnCreateSessionCompleteDelegate(FName SessionName, bool bWasSuccessful);
@@ -34,6 +42,8 @@ protected:
 
 private:
 	IOnlineSessionPtr SessionInterface;
+	TSharedPtr<FOnlineSessionSettings> SessionSettings;
+	TSharedPtr<FOnlineSessionSearch> SearchSettings;
 
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
 	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
