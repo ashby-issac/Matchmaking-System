@@ -18,7 +18,7 @@ class MULTIPLAYERSESSIONS_API UMenuUserWidget : public UUserWidget
 public: 
 	
 	UFUNCTION(BlueprintCallable)
-	void MenuSetup(int32 NumOfConnections = 4, FString MatchType = "FreeForAll");
+	void MenuSetup(int32 NumOfConnections = 4, FString MatchType = "FreeForAll", FString LobbyPath = "/Game/ThirdPerson/Maps/Lobby");
 
 	UFUNCTION()
 	void OnHostButtonClicked();
@@ -43,6 +43,7 @@ protected:
 private:
 	int32 NumOfPublicConnections;
 	FString MatchType;
+	FString PathToLobby{TEXT("")};
 
 	UPROPERTY(meta = (BindWidget))
 	class UButton* HostButton;

@@ -52,6 +52,8 @@ void UMultiplayerSessionsSubsystem::CreateGameSession(int32 NumOfConnections, FS
 	SessionSettings->bUseLobbiesIfAvailable = true;
 	SessionSettings->bUsesPresence = true;
 	SessionSettings->NumPublicConnections = NumOfConnections;
+	SessionSettings->BuildUniqueId = 1;
+
 	SessionSettings->Set(FName("MatchType"), MatchType, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	if (!SessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings))

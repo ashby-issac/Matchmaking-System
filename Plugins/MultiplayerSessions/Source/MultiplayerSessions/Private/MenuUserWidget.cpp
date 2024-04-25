@@ -6,11 +6,12 @@
 #include "OnlineSessionSettings.h"
 #include "MultiplayerSessionsSubsystem.h"
 
-void UMenuUserWidget::MenuSetup(int32 NumOfConnections, FString MatchType1)
+void UMenuUserWidget::MenuSetup(int32 NumOfConnections, FString MatchType1, FString LobbyPath)
 {
 	AddToViewport();
 	SetVisibility(ESlateVisibility::Visible);
 	bIsFocusable = true;
+	PathToLobby = FString::Printf(TEXT("%s?listen"), *LobbyPath);
 
 	if (auto World = GetWorld())
 	{
@@ -102,7 +103,7 @@ void UMenuUserWidget::OnCreateSessionComplete(bool bWasSuccessful)
 	{
 		if (auto World = GetWorld())
 		{
-			World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
+			World->ServerTravel(PathToLobby);
 		}
 		if (GEngine)
 		{
